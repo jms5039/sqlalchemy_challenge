@@ -1,0 +1,212 @@
+<!-- Define the HTML document type and language -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Set the character set and viewport for responsive design -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Set the title of the HTML page -->
+    <title>Flask App</title>
+</head>
+
+<body>
+    <!-- Main content of the HTML page -->
+
+    <!-- Display a heading for the welcome message -->
+    <h1>Welcome to the Climate App!</h1>
+    
+    <!-- Display introductory text -->
+    <p>This is the home page content.</p>
+
+    <!-- Display a heading for the available routes -->
+    <h2>Available Routes:</h2>
+    
+    <!-- Navigation menu with an unordered list -->
+
+    <nav>
+        <ul>
+            <!-- Link to the welcome page with a click event -->
+            <li><a href="#" data-url="{{ url_for('welcome') }}" onclick="loadData(this)">Go to Welcome Page</a></li>
+
+            <!-- Link to the precipitation data page with a click event -->
+            <li><a href="#" data-url="{{ url_for('precipitation') }}" onclick="loadData(this)">Go to Precipitation Data</a></li>
+
+            <!-- Link to the stations data page with a click event -->
+            <li><a href="#" data-url="{{ url_for('stations') }}" onclick="loadData(this)">Go to Stations Data</a></li>
+
+            <!-- Link to the temperature observations page with a click event -->
+            <li><a href="#" data-url="{{ url_for('tobs') }}" onclick="loadData(this)">Go to Temperature Observations</a></li>
+
+            <!-- New route with an input box for start date -->
+            <li>
+                <label for="start-date-input">Enter Start Date (YYYY-MM-DD):</label>
+                <input type="text" id="start-date-input" placeholder="YYYY-MM-DD">
+                <button onclick="loadStartDateData()">Go to Temperature Statistics From This Specific Date</button>
+            </li>
+
+            <!-- New route with input boxes for start and end dates -->
+            <li>
+                <label for="start-input">Enter Start Date (YYYY-MM-DD):</label>
+                <input type="text" id="start-input" placeholder="YYYY-MM-DD">
+
+                <label for="end-date-input">Enter End Date (YYYY-MM-DD):</label>
+                <input type="text" id="end-date-input" placeholder="YYYY-MM-DD">
+
+                <button onclick="loadStartEndDateData()">Go to Temperature Statistics For The Specified Start-End Date Range</button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Horizontal line to separate navigation from content -->
+    <hr />
+
+    <!-- Container for displaying JSON data -->
+    <div id="json-container"></div>
+
+    <!-- JavaScript section to handle AJAX requests and update content dynamically -->
+    <script>
+        // Function to load data from the specified URL and update the content
+        function loadData(element) {
+            var url = element.getAttribute('data-url');
+
+            // Make an AJAX request to the Flask route
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Update the content in the json-container
+                    document.getElementById("json-container").innerHTML = "<pre>" + JSON.stringify(data, null, 2) + "</pre>";
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to load data based on a start date input
+        function loadStartDateData() {
+            // Get the start date from the input field
+            var startDate = document.getElementById("start-date-input").value;
+
+            // Validate the input format
+            var dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+            if (!dateFormat.test(startDate)) {
+                alert("Error: Please enter the date in the format YYYY-MM-DD.");
+                document.getElementById("start-date-input").value = "";
+                return;
+            }
+
+            // Validate the input range
+            var inputDate = new Date(startDate);
+            var minDate = new Date("2010-01-01");
+            var maxDate = new Date("2017-08-23");
+
+            if (inputDate < minDate || inputDate > maxDate) {
+                alert("Error: Please enter a date between 2010-01-01 and 2017-08-23.");
+                document.getElementById("start-date-input").value = "";
+                return;
+            }
+
+            // Construct the URL with the entered start date
+            var url = "/api/v1.0/" + startDate;
+
+            // Make an AJAX request to the Flask route for the dynamic start date
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Add a line indicating the start date in the JSON data
+                    var startDateInfo = `This is data from start date: ${startDate}`;
+
+                    // Create a new div element for the line
+                    var lineElement = document.createElement("div");
+                    lineElement.textContent = startDateInfo;
+
+                    // Create a new pre element for the stringified JSON data
+                    var jsonDataElement = document.createElement("pre");
+                    jsonDataElement.textContent = JSON.stringify(data, null, 2);
+
+                    // Clear existing content in the json-container
+                    document.getElementById("json-container").innerHTML = "";
+
+                    // Append the line and JSON data elements to the json-container
+                    document.getElementById("json-container").appendChild(lineElement);
+                    document.getElementById("json-container").appendChild(jsonDataElement);
+
+                    // Clear the input field
+                    document.getElementById("start-date-input").value = "";
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Function to load data based on start and end date inputs
+        function loadStartEndDateData() {
+            // Get the start and end dates from the input fields
+            var startDate = document.getElementById("start-input").value;
+            var endDate = document.getElementById("end-date-input").value;
+
+            // Validate the input formats
+            var dateFormat = /^\d{4}-\d{2}-\d{2}$/;
+            if (!dateFormat.test(startDate) || !dateFormat.test(endDate)) {
+                alert("Error: Please enter dates in the format YYYY-MM-DD.");
+                // Clear only the input field with the invalid date
+                document.getElementById("start-input").value = dateFormat.test(startDate) ? startDate : "";
+                document.getElementById("end-date-input").value = dateFormat.test(endDate) ? endDate : "";
+                return;
+            }
+
+            // Validate the input range
+            var startInputDate = new Date(startDate);
+            var endInputDate = new Date(endDate);
+            var minDate = new Date("2010-01-01");
+            var maxDate = new Date("2017-08-23");
+
+            if (startInputDate < minDate || endInputDate > maxDate || startInputDate > endInputDate) {
+                alert("Error: Please enter valid start and end dates between 2010-01-01 and 2017-08-23.");
+                // Clear only the input field with the invalid date
+                document.getElementById("start-input").value = (startInputDate >= minDate && startInputDate <= maxDate) ? startDate : "";
+                document.getElementById("end-date-input").value = (endInputDate >= minDate && endInputDate <= maxDate && startInputDate <= endInputDate) ? endDate : "";
+                return;
+            }
+
+            // Construct the URL with the entered start and end dates
+            var url = "/api/v1.0/" + startDate + "/" + endDate;
+
+            // Make an AJAX request to the Flask route for the dynamic start and end dates
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    // Add a line indicating the start and end dates in the JSON data
+                    var dateRangeInfo = `This is data from ${startDate} to ${endDate}`;
+
+                    // Create a new div element for the line
+                    var lineElement = document.createElement("div");
+                    lineElement.textContent = dateRangeInfo;
+
+                    // Create a new pre element for the stringified JSON data
+                    var jsonDataElement = document.createElement("pre");
+                    jsonDataElement.textContent = JSON.stringify(data, null, 2);
+
+                    // Clear existing content in the json-container
+                    document.getElementById("json-container").innerHTML = "";
+
+                    // Append the line and JSON data elements to the json-container
+                    document.getElementById("json-container").appendChild(lineElement);
+                    document.getElementById("json-container").appendChild(jsonDataElement);
+
+                    // Clear the input fields
+                    document.getElementById("start-input").value = "";
+                    document.getElementById("end-date-input").value = "";
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Attach an event listener to all links to clear the input fields
+        var links = document.querySelectorAll('a');
+        links.forEach(function(link) {
+            link.addEventListener('click', function() {
+                document.getElementById("start-date-input").value = "";
+                document.getElementById("start-input").value = "";
+                document.getElementById("end-date-input").value = "";
+            });
+        });
+    </script>
+</body>
+
+</html>
